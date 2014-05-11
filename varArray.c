@@ -1,7 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 typedef enum {INT_T, FLOAT_T, DOUBLE_T} type_t;
+extern void printUnits();
+extern double getLengthRatio();
+extern double getForceRatio();
+extern double getMassRatio();
+extern double getTimeRatio();
 
 type_t string2type_t(char* input) {
 	if (strcmp(input, "int")==0) {
@@ -59,4 +65,29 @@ int isDeclared(var_t* varArray, int numDeclares, char* idName) {
 	return 0;
 }
 
+unit_t getUnits(var_t* varArray, int numDeclares, char* idName) {
+	int i;
+	for (i=0; i<numDeclares; i++) {
+		if (strcmp(idName, varArray[i].name)==0) {
+			return varArray[i].units;
+		}
+	}
+	exit(-1);
+}
 
+
+
+int checkUnits(var_t* varArray, int numDeclares, char*idName, unit_t unit2, double* ratio) {
+	unit_t unit1 = getUnits(varArray, numDeclares, idName);
+	if ((unit1.lengthPower !=  unit2.lengthPower) ||
+		(unit1.forcePower !=  unit2.forcePower) ||
+		(unit1.massPower !=  unit2.massPower) ||
+		(unit1.timePower !=  unit2.timePower)) {
+		return 0;
+	}
+	*ratio = pow((getLengthRatio(unit2.lengthUnit)/getLengthRatio(unit1.lengthUnit)),unit1.lengthPower)*
+	pow((getForceRatio(unit2.forceUnit)/getForceRatio(unit1.forceUnit)),unit1.lengthPower)*
+	pow((getMassRatio(unit2.massUnit)/getMassRatio(unit1.massUnit)),unit1.lengthPower)*
+	pow((getTimeRatio(unit2.timeUnit)/getTimeRatio(unit1.timeUnit)),unit1.lengthPower);
+	return 1;
+}
