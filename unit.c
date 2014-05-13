@@ -5,7 +5,7 @@
 
 extern int line_num;
 
-typedef enum {M, CM, MM, KM, FT, IN} length_t;
+typedef enum {M, CM, MM, KM, FT, IN, MI} length_t;
 typedef enum {N, LBF} force_t;
 typedef enum {KG, LB} mass_t;
 typedef enum {S, MIN, HR} timeU_t;
@@ -49,6 +49,9 @@ void printUnits(unit_t unit, char* returnString) {
 			break;
 		case IN:
 			strcpy(length, "in");
+			break;
+		case MI:
+			strcpy(length, "mi");
 			break;
 		default:
 			printf("Error\n");
@@ -154,6 +157,8 @@ double getLengthRatio(length_t lengthUnit) {
 			return .3048;
 		case IN:
 			return .0254;
+		case MI:
+			return 1609.344;
 		default:
 			fprintf(stderr, "Error: Something went wrong in getLengthRatio\n");
 			exit(-1);
@@ -321,7 +326,7 @@ unit_t addUnits(unit_t unit1, unit_t unit2, double* ratio) {
 		(unit1.timePower !=  unit2.timePower)) {
 		char buf1[20]; char buf2[20];
 		printUnits(unit1, buf1), printUnits(unit2, buf2);
-		fprintf(stderr, "Error: Adding incompatible units on line %d: %s and %s", line_num, buf1, buf2);
+		fprintf(stderr, "Error: Adding incompatible units on line %d: \"%s\" and \"%s\"\n", line_num, buf1, buf2);
 		exit(-1);
 	}
 	*ratio = pow((getLengthRatio(unit2.lengthUnit)/getLengthRatio(unit1.lengthUnit)),unit1.lengthPower)*
@@ -338,7 +343,7 @@ unit_t subUnits(unit_t unit1, unit_t unit2, double* ratio) {
 		(unit1.timePower !=  unit2.timePower)) {
 		char buf1[20]; char buf2[20];
 		printUnits(unit1, buf1); printUnits(unit2, buf2);
-		fprintf(stderr, "Error: Subtracting incompatible units on line %d: %s and %s", line_num, buf1, buf2);
+		fprintf(stderr, "Error: Subtracting incompatible units on line %d: \"%s\" and \"%s\"\n", line_num, buf1, buf2);
 		exit(-1);
 	}
 	*ratio = pow((getLengthRatio(unit2.lengthUnit)/getLengthRatio(unit1.lengthUnit)),unit1.lengthPower)*
@@ -346,24 +351,6 @@ unit_t subUnits(unit_t unit1, unit_t unit2, double* ratio) {
 		pow((getMassRatio(unit2.massUnit)/getMassRatio(unit1.massUnit)),unit1.lengthPower)*
 		pow((getTimeRatio(unit2.timeUnit)/getTimeRatio(unit1.timeUnit)),unit1.lengthPower);
 	return unit1;
-}
-
-unit_t opUnits(unit_t unit1, unit_t unit2, char operator, double* ratio) {
-	switch (operator){
-		case '*':
-			return multUnits(unit1, unit2, ratio);
-			break;
-		case '/':
-			return divUnits(unit1, unit2, ratio);
-			break;
-		case '+':
-			return addUnits(unit1, unit2, ratio);
-			break;
-		case '-':
-			return subUnits(unit1, unit2, ratio);
-			break;
-	}
-	exit(-1);
 }
 
 void string2unit_t(char* input, unit_t* unit) {
@@ -391,6 +378,10 @@ void string2unit_t(char* input, unit_t* unit) {
 	else if (strcmp(input, "in")==0) {
 		(*unit).lengthPower=1;
 		(*unit).lengthUnit=IN;
+	}
+	else if (strcmp(input, "mi")==0) {
+		(*unit).lengthPower=1;
+		(*unit).lengthUnit=MI;
 	}
 	else if (strcmp(input, "N")==0) {
 		(*unit).forcePower=1;
@@ -421,7 +412,7 @@ void string2unit_t(char* input, unit_t* unit) {
 		(*unit).timeUnit=HR;
 	}
 	else {
-		fprintf(stderr, "Error: Unrecognized unit %s on line %d. Stopping", input, line_num);
+		fprintf(stderr, "Error: Unrecognized unit %s on line %d. Stopping\n", input, line_num);
 		exit(-1);
 	}
 }

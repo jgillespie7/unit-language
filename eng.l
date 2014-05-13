@@ -13,6 +13,7 @@ alpha [a-zA-Z]
 \-?{digit}+					{ yylval.sval=strdup(yytext); return INT; }
 \-?{digit}*"."{digit}+|{digit}+"."{digit}* 	{ yylval.sval=strdup(yytext); return FLOAT; }
 "int"|"float"|"double"				{ yylval.sval=strdup(yytext); return TYPE; }
+"print"						{ return PRINT; }
 "+"						{ return ADD; }
 "-"						{ return SUBTRACT; }
 "*"						{ return MULTIPLY; }

@@ -59,7 +59,7 @@ int isDeclared(var_t* varArray, int numDeclares, char* idName) {
 	int i;
 	for (i=0; i<numDeclares; i++) {
 		if (strcmp(idName, varArray[i].name)==0) {
-			return 1;
+			return i+1;
 		}
 	}
 	return 0;

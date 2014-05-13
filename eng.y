@@ -38,7 +38,7 @@ typedef struct expression_t {
 }
 
 %token <sval> INT FLOAT IDENTIFIER TYPE UNITTYPE
-%token ENDL LPAREN RPAREN UNIT
+%token ENDL LPAREN RPAREN UNIT PRINT
 %type <exval> term expression statement
 %type <uval> unitterm unitexpression unitstatement
 %left ASSIGN
@@ -84,7 +84,7 @@ unitexpression: unitterm			{$$ = $1;}
 							fprintf(stderr, "Error: Mixed units on line %d\n", line_num);
 							exit(-1);
 						} }
-	| unitexpression DIVIDE unitexpression	{ double ratio; $$ = divUnits($1, $3), &ratio;
+	| unitexpression DIVIDE unitexpression	{ double ratio; $$ = divUnits($1, $3, &ratio);
 						if (ratio!=1) {
 							fprintf(stderr, "Error: Mixed units on line %d\n", line_num);
 							exit(-1);
@@ -97,18 +97,18 @@ statement: IDENTIFIER ASSIGN expression ENDL	{if (isDeclared(varArray, numDeclar
 	 						double ratio;
 	 						if (checkUnits(varArray, numDeclares, $1, $3.units, &ratio)) {
 							line_num++;
-							if (ratio==1) {
-								fprintf(OUTPUT, "%s = %s;\n", $1, $3.text);
+								if (ratio==1) {
+									fprintf(OUTPUT, "%s = %s;\n", $1, $3.text);
+								}
+								else {
+									fprintf(OUTPUT, "%s = %e*(%s);\n", $1, ratio, $3.text);
+								}
 							}
 							else {
-								fprintf(OUTPUT, "%s = %f*(%s);\n", $1, ratio, $3.text);
-							}
-							}
-							else {
-								fprintf(stderr, "Error: Tried to assign incompatible units on line %d.\n", line_num);
 								char buf1[20]; char buf2[20];
 								printUnits(getUnits(varArray, numDeclares, $1), buf1),
 								printUnits($3.units, buf2);
+								fprintf(stderr, "Error: Tried to assign incompatible units on line %d: \"%s\" to \"%s\".\n", line_num, buf2, buf1);
 								printf("%s to %s", buf1, buf2);
 								exit(-1);
 							}
@@ -117,6 +117,21 @@ statement: IDENTIFIER ASSIGN expression ENDL	{if (isDeclared(varArray, numDeclar
 							fprintf(stderr, "Error: Variable %s was not declared\n", $1);
 							exit(-1);
 						} }
+	| PRINT LPAREN IDENTIFIER RPAREN ENDL	{int i; if (i = isDeclared(varArray, numDeclares, $3)){
+							char buf[20];
+							printUnits(varArray[i-1].units, buf);
+							if (varArray[i-1].type==INT_T) {
+								fprintf(OUTPUT, "printf(\"%s = %%d %s\\n\", %s);", $3, buf, $3);
+							}
+							else {
+								fprintf(OUTPUT, "printf(\"%s = %%f %s\\n\", %s);", $3, buf, $3);
+							}
+						}
+						else {
+							fprintf(stderr, "Error: Variable %s was not declared\n", $3);
+							exit(-1);
+						} }
+							
 	;
 expression: term			{$$.text = strdup($1.text); $$.units = $1.units}
 	| expression ADD expression	{$$.text = malloc(sizeof(char)*(strlen($1.text)+strlen($3.text)+1));
@@ -129,7 +144,7 @@ expression: term			{$$.text = strdup($1.text); $$.units = $1.units}
 						sprintf($$.text,"%s%s%s", expression, operator, term);
 					}
 					else {
-						sprintf($$.text,"%s%s(%f*%s)", expression, operator, ratio, term);
+						sprintf($$.text,"%s%s(%e*%s)", expression, operator, ratio, term);
 					}
 					}
 	| expression SUBTRACT expression{$$.text = malloc(sizeof(char)*(strlen($1.text)+strlen($3.text)+1));
@@ -142,7 +157,7 @@ expression: term			{$$.text = strdup($1.text); $$.units = $1.units}
 						sprintf($$.text,"%s%s%s", expression, operator, term);
 					}
 					else {
-						sprintf($$.text,"%s%s(%f*%s)", expression, operator, ratio, term);
+						sprintf($$.text,"%s%s(%e*%s)", expression, operator, ratio, term);
 					}
 					}
 	| expression MULTIPLY expression{$$.text = malloc(sizeof(char)*(strlen($1.text)+strlen($3.text)+1));
@@ -155,7 +170,7 @@ expression: term			{$$.text = strdup($1.text); $$.units = $1.units}
 						sprintf($$.text,"%s%s%s", expression, operator, term);
 					}
 					else {
-						sprintf($$.text,"%s%s(%f*%s)", expression, operator, ratio, term);
+						sprintf($$.text,"%s%s(%e*%s)", expression, operator, ratio, term);
 					}
 					}
 	| expression DIVIDE expression	{$$.text = malloc(sizeof(char)*(strlen($1.text)+strlen($3.text)+1));
@@ -168,7 +183,7 @@ expression: term			{$$.text = strdup($1.text); $$.units = $1.units}
 						sprintf($$.text,"%s%s%s", expression, operator, term);
 					}
 					else {
-						sprintf($$.text,"%s%s(%f*%s)", expression, operator, ratio, term);
+						sprintf($$.text,"%s%s(%e*%s)", expression, operator, ratio, term);
 					}
 					}
 	;
@@ -195,25 +210,38 @@ term: IDENTIFIER			{if (isDeclared(varArray, numDeclares, $1)){
 %%
 int main(int argc, char** argv) {
 	FILE* input;
-	if (argc > 1) {
+	int testFlag;
+	if (argc == 3) {
+		if (strcmp(argv[1], "-t")==0){
+			testFlag = 1;
+			OUTPUT = stdout;
+		}
+		input = fopen(argv[2], "r");
+	}
+	else if (argc == 2) {
 		input = fopen(argv[1], "r");
+		OUTPUT = fopen("a.c", "w");
 	}
 	else {
 		printf("No input file specified. Stopping\n");
 		return 0;
 	}
 	yyin = input;
-//	OUTPUT = fopen("a.cc", "w");
-	OUTPUT = stdout;
+	fprintf(OUTPUT, "#include <stdio.h>\n");
 	fprintf(OUTPUT, "int main(){\n");
 	do {
 		yyparse();
 	} while (!feof(yyin));
-	fprintf(OUTPUT, "}\n");
+	fprintf(OUTPUT, "\n}\n");
 	int i;
-	for (i=0; i<numDeclares; i++) {
+	fclose(input);
+	fclose(OUTPUT);
+	if (!testFlag) {
+		system("gcc a.c");
+	}
+/*	for (i=0; i<numDeclares; i++) {
 		printf("%d %s\t", varArray[i].type, varArray[i].name);
 		//printUnits(varArray[i].units);
 		printf("\n");
-	}
+	}*/
 }
