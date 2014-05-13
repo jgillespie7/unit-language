@@ -1,7 +1,6 @@
 %{
 #define MYEXTERN extern
 #include "unit.h"
-#include "varArray.c"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +12,8 @@ extern int line_num;
 void yyerror(const char* s) {
 	fprintf(stderr, "Parse error on line %d: %s\n", line_num, s);
 	exit(-1);
+
+
 }
 FILE* OUTPUT;
 
@@ -20,16 +21,25 @@ FILE* OUTPUT;
 
 %code requires
 {
-extern const struct unit_t UNIT_DEFAULT;
-extern unit_t addUnits();
-extern unit_t subUnits();
-extern unit_t multUnits();
-extern unit_t divUnits();
-extern void printUnits();
-typedef struct expression_t {
-	char* text;
+	#include "varArray.h"
+	extern const struct unit_t UNIT_DEFAULT;
+	extern unit_t addUnits();
+	extern unit_t subUnits();
+	extern unit_t multUnits();
+	extern unit_t divUnits();
+	extern void printUnits();
+
+	typedef struct expression_t {
+		char* text;
 	unit_t units;
-}expression_t;
+	}expression_t;
+
+	typedef struct function_t{
+		char* name;
+		var_t* varArray;
+		int varArrayCapacity;
+		int numDeclares;
+	}function_t;
 }
 %union {
 	char* sval;
@@ -209,6 +219,8 @@ term: IDENTIFIER			{if (isDeclared(varArray, numDeclares, $1)){
 
 %%
 int main(int argc, char** argv) {
+	function_t main;
+	main.name = "main";
 	FILE* input;
 	int testFlag;
 	if (argc == 3) {

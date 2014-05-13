@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "unit.h"
 
 typedef enum {INT_T, FLOAT_T, DOUBLE_T} type_t;
 extern void printUnits();

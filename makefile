@@ -1,5 +1,5 @@
 eng: lex.yy.c eng.tab.h eng.tab.c unit.c
-	gcc -o eng lex.yy.c eng.tab.c unit.c -lfl -lm
+	gcc -o eng lex.yy.c eng.tab.c unit.c varArray.c -lfl -lm
 
 lex.yy.c: eng.l eng.tab.h unit.h varArray.c
 	flex eng.l
