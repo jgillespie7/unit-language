@@ -12,18 +12,24 @@ alpha [a-zA-Z]
 
 \-?{digit}+					{ yylval.sval=strdup(yytext); return INT; }
 \-?{digit}*"."{digit}+|{digit}+"."{digit}* 	{ yylval.sval=strdup(yytext); return FLOAT; }
+"function"					{ return FUNCTION; }
 "int"|"float"|"double"				{ yylval.sval=strdup(yytext); return TYPE; }
+"if"						{ return IF; }
+"do"						{ return DO; }
+"end"						{ return END; }
 "print"						{ return PRINT; }
 "+"						{ return ADD; }
 "-"						{ return SUBTRACT; }
 "*"						{ return MULTIPLY; }
 "/"						{ return DIVIDE; }
+">"|"<"|">="|"<="|"=="|"!="			{ yylval.sval=strdup(yytext); return COMPARISON; }
 {alpha}({alpha}|{digit})*			{ yylval.sval=strdup(yytext); return IDENTIFIER; }
+";"						{ return ENDSTATEMENT; }
 "="						{ return ASSIGN; }
 "("						{ return LPAREN; }
 ")"						{ return RPAREN; }
-[\t ]						;
-\n						{ return ENDL; }
+[\t ]						{ ; }
+"\n"						{ line_num++; }
 "\\"						{ BEGIN(unit); return UNIT; }
 .						{ printf("Unrecognized character on line %d: %s\n",line_num, yytext); exit(-1);}
 <unit>"\\"					{ BEGIN(INITIAL); return UNIT; }

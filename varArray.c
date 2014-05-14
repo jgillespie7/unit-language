@@ -30,9 +30,12 @@ typedef struct var_t{
 	unit_t units;
 }var_t;
 
-var_t* varArray;
-int varArrayCapacity = 0;
-int numDeclares = 0;
+typedef struct function_t{
+	char* name;
+	var_t* varArray;
+	int varArrayCapacity;
+	int numDeclares;
+}function_t;
 
 int appendElement(var_t element, var_t** varArray, int* capacity, int* numElements) {
 	if (*capacity==0) {
@@ -78,8 +81,7 @@ unit_t getUnits(var_t* varArray, int numDeclares, char* idName) {
 
 
 
-int checkUnits(var_t* varArray, int numDeclares, char*idName, unit_t unit2, double* ratio) {
-	unit_t unit1 = getUnits(varArray, numDeclares, idName);
+int checkUnits(unit_t unit1, unit_t unit2, double* ratio) {
 	if ((unit1.lengthPower !=  unit2.lengthPower) ||
 		(unit1.forcePower !=  unit2.forcePower) ||
 		(unit1.massPower !=  unit2.massPower) ||
