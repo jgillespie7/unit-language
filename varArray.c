@@ -69,6 +69,16 @@ int isDeclared(var_t* varArray, int numDeclares, char* idName) {
 	return 0;
 }
 
+int isFunctionDeclared(var_t* funcArray, int functionNumber, char* idName) {
+	int i;
+	for (i=0; i<functionNumber; i++) {
+		if (strcmp(idName, funcArray[i].name)==0) {
+			return i+1;
+		}
+	}
+	return 0;
+}
+
 unit_t getUnits(var_t* varArray, int numDeclares, char* idName) {
 	int i;
 	for (i=0; i<numDeclares; i++) {

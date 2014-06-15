@@ -22,12 +22,17 @@ alpha [a-zA-Z]
 "-"						{ return SUBTRACT; }
 "*"						{ return MULTIPLY; }
 "/"						{ return DIVIDE; }
+"&&"						{ return AND; }
+"||"						{ return OR; }
 ">"|"<"|">="|"<="|"=="|"!="			{ yylval.sval=strdup(yytext); return COMPARISON; }
 {alpha}({alpha}|{digit})*			{ yylval.sval=strdup(yytext); return IDENTIFIER; }
 ";"						{ return ENDSTATEMENT; }
 "="						{ return ASSIGN; }
 "("						{ return LPAREN; }
 ")"						{ return RPAREN; }
+"["						{ return LBRACKET; }
+"]"						{ return RBRACKET; }
+","						{ return COMMA; }
 [\t ]						{ ; }
 "\n"						{ line_num++; }
 "\\"						{ BEGIN(unit); return UNIT; }

@@ -31,7 +31,7 @@ FILE* OUTPUT;
 
 	typedef struct expression_t {
 		char* text;
-	unit_t units;
+		unit_t units;
 	}expression_t;
 
 }
@@ -41,12 +41,16 @@ FILE* OUTPUT;
 	struct expression_t exval;
 }
 
-%token <sval> INT FLOAT IDENTIFIER TYPE UNITTYPE COMPARISON
+%token <sval> INT FLOAT IDENTIFIER TYPE UNITTYPE
 %token ENDSTATEMENT LPAREN RPAREN UNIT PRINT FUNCTION //ENDSTATEMENT is a semicolon terminal
+%token LBRACKET RBRACKET COMMA
 %token DO IF END
-%type <exval> term expression statement conditional
+%type <exval> term expression statement conditional functioncall
 %type <uval> unitterm unitexpression unitstatement
+%type <sval> arglist
 %left ASSIGN
+%left <sval> AND OR
+%left <sval> COMPARISON
 %left ADD SUBTRACT
 %left MULTIPLY DIVIDE
 
@@ -62,6 +66,18 @@ functiondeclaration: FUNCTION IDENTIFIER ENDSTATEMENT	{ if (functionNumber>=0) {
 							funcArray[functionNumber].numDeclares = 0;
 							}
 		   ;
+functioncall: IDENTIFIER LPAREN arglist RPAREN		{ if (isFunctionDeclared(funcArray, functionNumber, $1)) {
+	    							sprintf($$.text, "%s(%s)", $1, $3);
+								$$.units = UNIT_DEFAULT;
+							}
+							else {
+								fprintf(stderr, "Error: Function %s was not declared\n", $1);
+								exit(-1);
+							} }
+	    ;
+arglist: expression					{ sprintf($$, "%s", $1.text); }
+	| arglist COMMA expression			{ sprintf($$, "%s, %s", $1, $3.text); }
+	;
 var_tsection: /* empty */ | var_tsection var_t
 		  ;
 statementsection: /* empty */ | statementsection statement | statementsection doloop | statementsection ifstatement
@@ -98,8 +114,10 @@ conditional: expression COMPARISON expression	{double ratio; if (checkUnits($1.u
 							printUnits($3.units, buf2);
 							fprintf(stderr, "Error: Tried to assign incompatible units on line %d: \"%s\" to \"%s\".\n", line_num, buf2, buf1);
 							exit(-1);
-
 						} }
+	| conditional AND conditional	{sprintf($$.text, "%s && %s", $1.text, $3.text);}
+	| conditional OR conditional	{sprintf($$.text, "%s || %s", $1.text, $3.text);}
+	| LPAREN conditional RPAREN	{sprintf($$.text, "( %s )", $2.text);}
 	   ;
 var_t: TYPE IDENTIFIER ENDSTATEMENT 		{if (isDeclared(funcArray[functionNumber].varArray,
      							funcArray[functionNumber].numDeclares, $2)){
@@ -166,11 +184,11 @@ statement: IDENTIFIER ASSIGN expression ENDSTATEMENT	{if (isDeclared(funcArray[f
 								fprintf(stderr, "Error: Tried to assign incompatible units on line %d: \"%s\" to \"%s\".\n", line_num, buf2, buf1);
 								exit(-1);
 							}
-						}
-						else {
-							fprintf(stderr, "Error: Variable %s was not declared\n", $1);
-							exit(-1);
-						} }
+							}
+							else {
+								fprintf(stderr, "Error: Variable %s was not declared\n", $1);
+								exit(-1);
+							} }
 	| PRINT LPAREN IDENTIFIER RPAREN ENDSTATEMENT	{int i; if (i = isDeclared(funcArray[functionNumber].varArray,
 								funcArray[functionNumber].numDeclares, $3)){
 							char buf[20];
@@ -262,6 +280,7 @@ term: IDENTIFIER			{if (isDeclared(funcArray[functionNumber].varArray,
 					$$.text = strcat(strcat(lparen, expression), rparen);
 					$$.units = $2.units
 					}
+	| functioncall			{$$.text = strdup($1.text); $$.units = $1.units;}
     	;
 
 %%

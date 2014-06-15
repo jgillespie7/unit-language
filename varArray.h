@@ -36,6 +36,7 @@ int numDeclares;
 
 int appendElement();
 int isDeclared();
+int isFunctionDeclared();
 unit_t getUnits();
 int checkUnits();
 #endif
